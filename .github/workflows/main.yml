@@ -1,16 +1,16 @@
 name: Build Better View
 
 on:
-  workflow_dispatch:          # ручной запуск
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'                  # автоматически по тегу
+      - 'v*'
 
 jobs:
   build-windows:
     runs-on: windows-latest
     permissions:
-      contents: write          # нужно для создания релиза
+      contents: write
 
     steps:
     - name: Checkout repository
@@ -23,7 +23,7 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_mingw'
-        modules: 'qtsvg qtconcurrent'
+        # убираем modules, так как qtsvg и qtconcurrent входят в базовый пакет
 
     - name: Build with qmake
       run: |
@@ -53,19 +53,18 @@ jobs:
           echo "release_tag=v$tag" >> $env:GITHUB_OUTPUT
           echo "release_name=Better View $tag" >> $env:GITHUB_OUTPUT
         } else {
-          # ручной запуск – создаём релиз без тега
           echo "release_tag=v$ver" >> $env:GITHUB_OUTPUT
           echo "release_name=Better View $ver" >> $env:GITHUB_OUTPUT
         }
       shell: pwsh
 
-    - name: Upload artifact (always)
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: BetterView-${{ steps.get_version.outputs.version }}
         path: build/release/BetterView.exe
 
-    - name: Create Release (always)
+    - name: Create Release
       uses: ncipollo/release-action@v1
       with:
         artifacts: "build/release/BetterView.exe"
