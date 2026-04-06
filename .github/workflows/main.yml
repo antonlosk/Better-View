@@ -16,14 +16,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Qt
+    - name: Install Qt with MinGW 13.1.0
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.10.2'
         host: 'windows'
         target: 'desktop'
         arch: 'win64_mingw'
-        # убираем modules, так как qtsvg и qtconcurrent входят в базовый пакет
+        mingwVersion: '13.1.0'          # явно указываем версию MinGW
+        modules: 'qtsvg qtconcurrent'
 
     - name: Build with qmake
       run: |
