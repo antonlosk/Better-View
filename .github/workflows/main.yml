@@ -1,0 +1,77 @@
+name: Build Better View
+
+on:
+  workflow_dispatch:          # ручной запуск
+  push:
+    tags:
+      - 'v*'                  # автоматически по тегу
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write          # нужно для создания релиза
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.11.0'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_mingw'
+        modules: 'qtsvg qtconcurrent'
+
+    - name: Build with qmake
+      run: |
+        mkdir build
+        cd build
+        qmake ../BetterView.pro
+        mingw32-make -j4
+
+    - name: Get version
+      id: get_version
+      run: |
+        $content = Get-Content version.h -Raw
+        if ($content -match '#define VERSION_STRING "([0-9.]+)"') {
+          $ver = $matches[1]
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "version=dev" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+
+    - name: Determine release tag and name
+      id: release_info
+      run: |
+        $ver = "${{ steps.get_version.outputs.version }}"
+        if ("${{ github.ref_type }}" -eq "tag") {
+          $tag = "${{ github.ref_name }}" -replace '^v',''
+          echo "release_tag=v$tag" >> $env:GITHUB_OUTPUT
+          echo "release_name=Better View $tag" >> $env:GITHUB_OUTPUT
+        } else {
+          # ручной запуск – создаём релиз без тега
+          echo "release_tag=v$ver" >> $env:GITHUB_OUTPUT
+          echo "release_name=Better View $ver" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+
+    - name: Upload artifact (always)
+      uses: actions/upload-artifact@v4
+      with:
+        name: BetterView-${{ steps.get_version.outputs.version }}
+        path: build/release/BetterView.exe
+
+    - name: Create Release (always)
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "build/release/BetterView.exe"
+        name: "${{ steps.release_info.outputs.release_name }}"
+        tag: "${{ steps.release_info.outputs.release_tag }}"
+        commit: "${{ github.sha }}"
+        allowUpdates: true
+        replacesArtifacts: true
+        generateReleaseNotes: true
