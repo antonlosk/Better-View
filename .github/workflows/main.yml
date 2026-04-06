@@ -23,8 +23,8 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_mingw'
-        mingwVersion: '13.1.0'          # явно указываем версию MinGW
-        modules: 'qtsvg qtconcurrent'
+        mingwVersion: '13.1.0'
+        # modules: 'qtsvg qtconcurrent'   # удалено – эти модули входят в базовый пакет
 
     - name: Build with qmake
       run: |
