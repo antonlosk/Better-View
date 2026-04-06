@@ -16,7 +16,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Qt 6.10.1 with MSVC (no extra modules)
+    - name: Install Qt 6.10.1 with MSVC
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.10.1'
@@ -26,7 +26,7 @@ jobs:
         setup-python: 'true'
         aqtversion: '==3.3.0'
         py7zrversion: '==0.22.*'
-        # modules: 'qtsvg qtconcurrent'   # удалено – эти модули входят в базовый пакет
+        tools: 'tools_ifw'
 
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
@@ -52,6 +52,36 @@ jobs:
         }
       shell: pwsh
 
+    - name: Deploy Qt dependencies
+      shell: pwsh
+      run: |
+        $qtBin = "${{ runner.temp }}\Qt\6.10.1\msvc2022_64\bin"
+        $deployDir = "deploy"
+        New-Item -ItemType Directory -Force -Path $deployDir
+        Copy-Item "build\release\BetterView.exe" -Destination $deployDir
+        & "$qtBin\windeployqt.exe" --dir $deployDir $deployDir\BetterView.exe
+        Copy-Item "icons\icon.ico" -Destination "installer\config\icon.ico" -Force
+
+    - name: Create portable ZIP
+      shell: pwsh
+      run: |
+        $ver = "${{ steps.get_version.outputs.version }}"
+        Compress-Archive -Path deploy\* -DestinationPath BetterView-$ver-portable.zip
+
+    - name: Create installer
+      shell: pwsh
+      run: |
+        $version = "${{ steps.get_version.outputs.version }}"
+        $date = (Get-Date -Format "yyyy-MM-dd")
+        (Get-Content installer/config/config.xml) -replace '%VERSION%', $version | Set-Content installer/config/config.xml
+        (Get-Content installer/packages/com.betterview/meta/package.xml) -replace '%VERSION%', $version | Set-Content installer/packages/com.betterview/meta/package.xml
+        (Get-Content installer/packages/com.betterview/meta/package.xml) -replace '%DATE%', $date | Set-Content installer/packages/com.betterview/meta/package.xml
+        $dataDir = "installer/packages/com.betterview/data"
+        New-Item -ItemType Directory -Force -Path $dataDir
+        Copy-Item -Path "deploy\*" -Destination $dataDir -Recurse
+        $ifwPath = Get-ChildItem -Path "${{ runner.temp }}\Qt\Tools\QtInstallerFramework" -Directory | Select-Object -First 1
+        & "$ifwPath\bin\binarycreator.exe" -c installer/config/config.xml -p installer/packages BetterView-Setup-$version.exe
+
     - name: Determine release tag and name
       id: release_info
       run: |
@@ -66,16 +96,18 @@ jobs:
         }
       shell: pwsh
 
-    - name: Upload artifact
+    - name: Upload artifacts (installer + portable zip)
       uses: actions/upload-artifact@v4
       with:
         name: BetterView-${{ steps.get_version.outputs.version }}
-        path: build/release/BetterView.exe
+        path: |
+          BetterView-Setup-${{ steps.get_version.outputs.version }}.exe
+          BetterView-${{ steps.get_version.outputs.version }}-portable.zip
 
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "build/release/BetterView.exe"
+        artifacts: "BetterView-Setup-${{ steps.get_version.outputs.version }}.exe, BetterView-${{ steps.get_version.outputs.version }}-portable.zip"
         name: "${{ steps.release_info.outputs.release_name }}"
         tag: "${{ steps.release_info.outputs.release_tag }}"
         commit: "${{ github.sha }}"
