@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>Better View</Name>
+    <Version>%VERSION%</Version>
+    <Title>Better View Image Viewer</Title>
+    <Publisher>antonlosk</Publisher>
+    <ProductUrl>https://github.com/antonlosk/Better-View</ProductUrl>
+    <InstallerApplicationIcon>icon.ico</InstallerApplicationIcon>
+    <InstallerWindowIcon>icon.ico</InstallerWindowIcon>
+    <StartMenuDir>Better View</StartMenuDir>
+    <TargetDir>@HomeDir@/BetterView</TargetDir>
+    <AdminTargetDir>@ApplicationsDir@/BetterView</AdminTargetDir>
+</Installer>
