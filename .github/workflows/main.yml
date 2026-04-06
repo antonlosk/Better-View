@@ -16,15 +16,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Qt 6.10.0 with MSVC
-      uses: theoden-software/install-qt@v2
+    - name: Install Qt 6.10.1 with MSVC
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.10.0'
-        arch: 'win64_msvc2019_64'
+        version: '6.10.1'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2022_64'
         modules: 'qtsvg qtconcurrent'
+        setup-python: 'true'
+        aqtversion: '==3.3.0'
+        py7zrversion: '==0.22.*'
 
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: 'x64'
 
     - name: Build with qmake
       run: |
@@ -33,7 +40,7 @@ jobs:
         qmake ../BetterView.pro
         nmake
 
-    - name: Get version
+    - name: Get version from version.h
       id: get_version
       run: |
         $content = Get-Content version.h -Raw
