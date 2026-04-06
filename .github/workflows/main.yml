@@ -55,7 +55,14 @@ jobs:
     - name: Deploy Qt dependencies
       shell: pwsh
       run: |
-        $qtBin = "${{ runner.temp }}\Qt\6.10.1\msvc2022_64\bin"
+        # Используем известный путь из логов предыдущих сборок
+        $qtBase = "D:\a\_temp\Qt\6.10.1\msvc2022_64"
+        if (-not (Test-Path $qtBase)) {
+          # Fallback через runner.temp
+          $qtBase = "${{ runner.temp }}\Qt\6.10.1\msvc2022_64"
+        }
+        $qtBin = "$qtBase\bin"
+        Write-Host "Qt bin path: $qtBin"
         $deployDir = "deploy"
         New-Item -ItemType Directory -Force -Path $deployDir
         Copy-Item "build\release\BetterView.exe" -Destination $deployDir
@@ -80,6 +87,9 @@ jobs:
         New-Item -ItemType Directory -Force -Path $dataDir
         Copy-Item -Path "deploy\*" -Destination $dataDir -Recurse
         $ifwPath = Get-ChildItem -Path "${{ runner.temp }}\Qt\Tools\QtInstallerFramework" -Directory | Select-Object -First 1
+        if (-not $ifwPath) {
+          $ifwPath = "D:\a\_temp\Qt\Tools\QtInstallerFramework\4.7"
+        }
         & "$ifwPath\bin\binarycreator.exe" -c installer/config/config.xml -p installer/packages BetterView-Setup-$version.exe
 
     - name: Determine release tag and name
