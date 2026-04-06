@@ -1,0 +1,14 @@
+<RCC>
+    <qresource>
+        <file>icons/chevron-left.svg</file>
+        <file>icons/chevron-right.svg</file>
+        <file>icons/delete.svg</file>
+        <file>icons/fullscreen.svg</file>
+        <file>icons/menu.svg</file>
+        <file>icons/open.svg</file>
+        <file>icons/rotate-left.svg</file>
+        <file>icons/rotate-right.svg</file>
+        <file>icons/zoom-in.svg</file>
+        <file>icons/zoom-out.svg</file>
+    </qresource>
+</RCC>
