@@ -16,22 +16,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Qt with MinGW 13.1.0
+    - name: Install Qt with MSVC
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.10.2'
         host: 'windows'
         target: 'desktop'
-        arch: 'win64_mingw'
-        mingwVersion: '13.1.0'
-        # modules: 'qtsvg qtconcurrent'   # удалено – эти модули входят в базовый пакет
+        arch: 'win64_msvc2019_64'   # MSVC 2019/2022
+        modules: 'qtsvg qtconcurrent'
+
+    - name: Setup MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
 
     - name: Build with qmake
       run: |
         mkdir build
         cd build
         qmake ../BetterView.pro
-        mingw32-make -j4
+        nmake
 
     - name: Get version
       id: get_version
