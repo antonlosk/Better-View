@@ -16,14 +16,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Qt with MSVC
+    - name: Install Qt with MSVC (no extra modules)
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.10.2'
         host: 'windows'
         target: 'desktop'
-        arch: 'win64_msvc2019_64'   # MSVC 2019/2022
-        modules: 'qtsvg qtconcurrent'
+        arch: 'win64_msvc2019_64'
+        # modules: 'qtsvg qtconcurrent'   # removed – these are included in base
 
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
