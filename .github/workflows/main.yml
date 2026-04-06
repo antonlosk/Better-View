@@ -16,17 +16,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Qt 6.10.1 with MSVC
+    - name: Install Qt 6.10.1 with MSVC (no extra modules)
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.10.1'
         host: 'windows'
         target: 'desktop'
         arch: 'win64_msvc2022_64'
-        modules: 'qtsvg qtconcurrent'
         setup-python: 'true'
         aqtversion: '==3.3.0'
         py7zrversion: '==0.22.*'
+        # modules: 'qtsvg qtconcurrent'   # удалено – эти модули входят в базовый пакет
 
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
