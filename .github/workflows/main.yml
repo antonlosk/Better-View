@@ -17,13 +17,11 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install Qt 6.10.0 with MSVC
-      uses: jurplel/install-qt-action@v4
+      uses: theoden-software/install-qt@v2
       with:
         version: '6.10.0'
-        host: 'windows'
-        target: 'desktop'
         arch: 'win64_msvc2019_64'
-        # modules: 'qtsvg qtconcurrent'   # не нужны – входят в базовый пакет
+        modules: 'qtsvg qtconcurrent'
 
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
