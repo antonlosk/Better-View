@@ -1,4 +1,3 @@
-#include "version.h"
 #include "mainwindow.h"
 #include "imageviewer.h"
 #include "gifviewer.h"
@@ -7,6 +6,10 @@
 #include "settingsmanager.h"
 #include "fileplaylist.h"
 #include "zoomcontrol.h"
+#include "thememanager.h"
+#include "fullscreenmanager.h"
+#include "statusbarmanager.h"
+#include "version.h"
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
@@ -28,17 +31,6 @@
 #include <QPainter>
 #include <QtConcurrent>
 
-static bool isSystemDarkTheme()
-{
-#ifdef Q_OS_WIN
-    QSettings settings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)", QSettings::NativeFormat);
-    bool useLight = settings.value("AppsUseLightTheme", 1).toInt();
-    return !useLight;
-#else
-    return qApp->styleHints()->colorScheme() == Qt::ColorScheme::Dark;
-#endif
-}
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
     openAction(nullptr),
@@ -53,16 +45,13 @@ MainWindow::MainWindow(QWidget *parent)
     imageViewer(nullptr),
     gifViewer(nullptr),
     fileNameLabel(nullptr),
-    resolutionLabel(nullptr),
-    fileSizeLabel(nullptr),
     zoomControl(nullptr),
-    isFullscreen(false),
-    wasMaximized(false),
-    savedZoom(1.0),
     isLoading(false),
     settings("BetterView", "BetterView")
 {
     m_playlist = new FilePlaylist(this);
+    m_themeManager = new ThemeManager(this);
+
     setupUI();
     setupToolbar();
     setupStatusBar();
@@ -70,7 +59,11 @@ MainWindow::MainWindow(QWidget *parent)
     setAcceptDrops(true);
     resize(800, 600);
     enableControls(false);
-    applyTheme(SettingsManager::loadTheme());
+    m_themeManager->loadAndApply();
+    updateIconsFromTheme();
+
+    m_fullscreenManager = new FullscreenManager(this, imageViewer, this);
+    m_statusBarManager = new StatusBarManager(statusBar(), this);
 
     imageWatcher = new QFutureWatcher<QImage>(this);
     connect(imageWatcher, &QFutureWatcher<QImage>::finished, this, &MainWindow::onImageLoaded);
@@ -140,11 +133,6 @@ void MainWindow::setupStatusBar()
     QStatusBar *statusBar = this->statusBar();
     statusBar->setSizeGripEnabled(false);
 
-    resolutionLabel = new QLabel(tr("Resolution: -- x --"));
-    fileSizeLabel = new QLabel(tr("Size: -- MB"));
-    statusBar->addWidget(resolutionLabel);
-    statusBar->addWidget(fileSizeLabel);
-
     zoomControl = new ZoomControl(this);
     statusBar->addPermanentWidget(zoomControl);
     connect(zoomControl, &ZoomControl::zoomRequested, imageViewer, &ImageViewer::setZoom);
@@ -210,15 +198,11 @@ void MainWindow::setupSettingsMenu()
     themeMenu->addAction(themeSystem);
     themeMenu->addAction(themeDark);
     themeMenu->addAction(themeLight);
-
     menu->addSeparator();
-
     QAction *aboutAction = new QAction(tr("About"), this);
     connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
     menu->addAction(aboutAction);
-
     menu->addSeparator();
-
     QAction *exitAction = new QAction(tr("E&xit"), this);
     exitAction->setShortcut(QKeySequence::Quit);
     connect(exitAction, &QAction::triggered, this, &MainWindow::exitApp);
@@ -230,121 +214,26 @@ void MainWindow::setupSettingsMenu()
 
 void MainWindow::applyTheme(const QString &theme)
 {
-    QPalette palette;
-    QString actualTheme = theme;
-    if (theme == "system")
-        actualTheme = isSystemDarkTheme() ? "dark" : "light";
-
-    if (actualTheme == "dark") {
-        palette.setColor(QPalette::Window, QColor(32, 32, 32));
-        palette.setColor(QPalette::WindowText, Qt::white);
-        palette.setColor(QPalette::Base, QColor(25, 25, 25));
-        palette.setColor(QPalette::AlternateBase, QColor(45, 45, 45));
-        palette.setColor(QPalette::ToolTipBase, QColor(32, 32, 32));
-        palette.setColor(QPalette::ToolTipText, Qt::white);
-        palette.setColor(QPalette::Text, Qt::white);
-        palette.setColor(QPalette::Button, QColor(45, 45, 45));
-        palette.setColor(QPalette::ButtonText, Qt::white);
-        palette.setColor(QPalette::BrightText, Qt::red);
-        palette.setColor(QPalette::Link, QColor(42, 130, 218));
-        palette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-        palette.setColor(QPalette::HighlightedText, Qt::white);
-        palette.setColor(QPalette::Disabled, QPalette::Text, QColor(128, 128, 128));
-        palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128));
-    } else {
-        palette.setColor(QPalette::Window, QColor(240, 240, 240));
-        palette.setColor(QPalette::WindowText, Qt::black);
-        palette.setColor(QPalette::Base, Qt::white);
-        palette.setColor(QPalette::AlternateBase, QColor(245, 245, 245));
-        palette.setColor(QPalette::ToolTipBase, Qt::white);
-        palette.setColor(QPalette::ToolTipText, Qt::black);
-        palette.setColor(QPalette::Text, Qt::black);
-        palette.setColor(QPalette::Button, QColor(240, 240, 240));
-        palette.setColor(QPalette::ButtonText, Qt::black);
-        palette.setColor(QPalette::BrightText, Qt::red);
-        palette.setColor(QPalette::Link, QColor(0, 0, 255));
-        palette.setColor(QPalette::Highlight, QColor(0, 120, 215));
-        palette.setColor(QPalette::HighlightedText, Qt::white);
-        palette.setColor(QPalette::Disabled, QPalette::Text, QColor(128, 128, 128));
-        palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128));
-    }
-    qApp->setPalette(palette);
-    SettingsManager::saveTheme(theme);
-    updateIcons();
+    m_themeManager->applyTheme(theme);
+    updateIconsFromTheme();
 }
 
-void MainWindow::updateIcons()
+void MainWindow::updateIconsFromTheme()
 {
-    QColor iconColor;
-    QPalette pal = qApp->palette();
-    QColor windowColor = pal.color(QPalette::Window);
-    bool isDarkTheme = (windowColor.lightness() < 128);
-    iconColor = isDarkTheme ? Qt::white : Qt::black;
-
-    auto loadIcon = [&](const QString &fileName) -> QIcon {
-        QString key = fileName + (isDarkTheme ? "_dark" : "_light");
-        if (iconCache.contains(key))
-            return iconCache[key];
-
-        QString path = QString(":/icons/%1").arg(fileName);
-        QSvgRenderer renderer(path);
-        if (!renderer.isValid()) {
-            return QIcon();
-        }
-        QPixmap pixmap(renderer.defaultSize());
-        pixmap.fill(Qt::transparent);
-        QPainter painter(&pixmap);
-        renderer.render(&painter);
-        painter.end();
-
-        QPixmap coloredPixmap(pixmap.size());
-        coloredPixmap.fill(Qt::transparent);
-        QPainter colorPainter(&coloredPixmap);
-        colorPainter.setCompositionMode(QPainter::CompositionMode_Source);
-        colorPainter.drawPixmap(0, 0, pixmap);
-        colorPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        colorPainter.fillRect(coloredPixmap.rect(), iconColor);
-        colorPainter.end();
-
-        QIcon result(coloredPixmap);
-        iconCache[key] = result;
-        return result;
-    };
-
-    if (openAction) openAction->setIcon(loadIcon("open.svg"));
-    if (rotateLeftAction) rotateLeftAction->setIcon(loadIcon("rotate-left.svg"));
-    if (rotateRightAction) rotateRightAction->setIcon(loadIcon("rotate-right.svg"));
-    if (deleteAction) deleteAction->setIcon(loadIcon("delete.svg"));
-    if (fullscreenAction) fullscreenAction->setIcon(loadIcon("fullscreen.svg"));
-    if (prevAction) prevAction->setIcon(loadIcon("chevron-left.svg"));
-    if (nextAction) nextAction->setIcon(loadIcon("chevron-right.svg"));
-    if (settingsBtn) settingsBtn->setIcon(loadIcon("menu.svg"));
+    QList<QAction*> actions;
+    if (openAction) actions.append(openAction);
+    if (rotateLeftAction) actions.append(rotateLeftAction);
+    if (rotateRightAction) actions.append(rotateRightAction);
+    if (deleteAction) actions.append(deleteAction);
+    if (fullscreenAction) actions.append(fullscreenAction);
+    if (prevAction) actions.append(prevAction);
+    if (nextAction) actions.append(nextAction);
+    m_themeManager->updateIcons(actions, settingsBtn);
 }
 
 void MainWindow::toggleFullscreen()
 {
-    if (isFullscreen) {
-        if (wasMaximized)
-            showMaximized();
-        else
-            showNormal();
-        QWidget *toolbar = findChild<QToolBar*>();
-        if (toolbar) toolbar->show();
-        statusBar()->show();
-        imageViewer->setZoomEnabled(true);
-        imageViewer->setZoom(savedZoom);
-        isFullscreen = false;
-    } else {
-        wasMaximized = isMaximized();
-        savedZoom = imageViewer->getZoom();
-        showFullScreen();
-        imageViewer->fillToView();
-        imageViewer->setZoomEnabled(false);
-        QWidget *toolbar = findChild<QToolBar*>();
-        if (toolbar) toolbar->hide();
-        statusBar()->hide();
-        isFullscreen = true;
-    }
+    m_fullscreenManager->toggle();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -352,7 +241,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_F11) {
         toggleFullscreen();
         event->accept();
-    } else if (event->key() == Qt::Key_Escape && isFullscreen) {
+    } else if (event->key() == Qt::Key_Escape && m_fullscreenManager->isFullscreen()) {
         toggleFullscreen();
         event->accept();
     } else if (event->key() == Qt::Key_Left) {
@@ -391,7 +280,7 @@ void MainWindow::onImageLoaded()
         QPixmap pixmap = QPixmap::fromImage(img);
         imageViewer->setPixmap(pixmap);
         stackedWidget->setCurrentWidget(imageViewer);
-        updateFileInfo();
+        m_statusBarManager->updateFileInfo(currentFilePath, false, QSize());
         enableControls(true);
         updateNavigationButtons();
         QFileInfo fi(currentFilePath);
@@ -431,7 +320,8 @@ bool MainWindow::loadFile(const QString &filePath)
                 stackedWidget->setCurrentWidget(gifViewer);
                 updateTitle();
                 fileNameLabel->setText(fi.fileName());
-                updateFileInfo();
+                QSize gifSize = gifViewer->getOriginalSize();
+                m_statusBarManager->updateFileInfo(currentFilePath, true, gifSize);
                 enableControls(false);
                 updateNavigationButtons();
                 return true;
@@ -450,24 +340,6 @@ bool MainWindow::loadFile(const QString &filePath)
     });
     imageWatcher->setFuture(future);
     return true;
-}
-
-void MainWindow::updateFileInfo()
-{
-    if (currentFilePath.isEmpty()) {
-        resolutionLabel->setText(tr("Resolution: -- x --"));
-        fileSizeLabel->setText(tr("Size: -- MB"));
-        return;
-    }
-    double sizeMB = FileManager::getFileSizeMB(currentFilePath);
-    fileSizeLabel->setText(tr("Size: %1 MB").arg(sizeMB, 0, 'f', 2));
-    if (stackedWidget->currentWidget() == imageViewer) {
-        QSize sz = ImageLoader::getImageSize(currentFilePath);
-        resolutionLabel->setText(tr("Resolution: %1 x %2").arg(sz.width()).arg(sz.height()));
-    } else if (stackedWidget->currentWidget() == gifViewer) {
-        QSize sz = gifViewer->getOriginalSize();
-        resolutionLabel->setText(tr("Resolution: %1 x %2 (GIF)").arg(sz.width()).arg(sz.height()));
-    }
 }
 
 void MainWindow::updateTitle()
@@ -504,8 +376,8 @@ void MainWindow::updateNavigationButtons()
 
 void MainWindow::openFile()
 {
-    QString filePath = QFileDialog::getOpenFileName(this, tr("Open Image"),
-                                                    QString(), tr("Images (*.jpg *.jpeg *.png *.gif *.webp)"));
+    QString filter = tr("Images (*.jpg *.jpeg *.jpe *.png *.gif *.webp *.bmp *.ico *.tiff *.tif *.svg *.svgz *.heif)");
+    QString filePath = QFileDialog::getOpenFileName(this, tr("Open Image"), QString(), filter);
     if (!filePath.isEmpty()) {
         QFileInfo fi(filePath);
         fileNameLabel->setText(fi.fileName());
@@ -537,7 +409,7 @@ void MainWindow::deleteCurrentFile()
             currentFilePath.clear();
             updateTitle();
             fileNameLabel->setText(tr("No file"));
-            updateFileInfo();
+            m_statusBarManager->clear();
             enableControls(false);
         }
     } else {
@@ -590,11 +462,12 @@ void MainWindow::dropEvent(QDropEvent *event)
     const QList<QUrl> urls = event->mimeData()->urls();
     if (urls.isEmpty()) return;
     QString filePath = urls.first().toLocalFile();
-    QStringList supportedExt = { "jpg", "jpeg", "png", "gif", "webp" };
-    if (supportedExt.contains(QFileInfo(filePath).suffix().toLower())) {
-        QFileInfo fi(filePath);
+    QFileInfo fi(filePath);
+    QStringList supportedExt = { "jpg", "jpeg", "jpe", "png", "gif", "webp", "bmp", "ico", "tiff", "tif", "svg", "svgz", "heif" };
+    if (supportedExt.contains(fi.suffix().toLower())) {
         fileNameLabel->setText(fi.fileName());
         loadFile(filePath);
-    } else
+    } else {
         QMessageBox::information(this, tr("Not supported"), tr("File format not supported."));
+    }
 }

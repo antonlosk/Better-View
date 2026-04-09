@@ -12,7 +12,7 @@ public:
     static QString getPreviousImage(const QString &currentFile);
     static bool deleteFile(const QString &filePath);
     static double getFileSizeMB(const QString &filePath);
-    static QStringList getSupportedExtensions();
+    static QStringList getSupportedExtensions();   // единый список расширений
 };
 
-#endif
+#endif // FILEMANAGER_H

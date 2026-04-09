@@ -1,10 +1,12 @@
 #include "filemanager.h"
 #include <QDir>
 #include <QFileInfo>
+#include <QFile>
 
 QStringList FileManager::getSupportedExtensions()
 {
-    return { "jpg", "jpeg", "png", "gif", "webp" };
+    // Добавлены все поддерживаемые форматы
+    return { "jpg", "jpeg", "jpe", "png", "gif", "webp", "bmp", "ico", "tiff", "tif", "svg", "svgz", "heif" };
 }
 
 QStringList FileManager::getImageFilesInFolder(const QString &filePath)
@@ -47,6 +49,9 @@ QString FileManager::getPreviousImage(const QString &currentFile)
 
 bool FileManager::deleteFile(const QString &filePath)
 {
+    // Перемещаем в корзину, при неудаче – обычное удаление
+    if (QFile::moveToTrash(filePath))
+        return true;
     return QFile::remove(filePath);
 }
 

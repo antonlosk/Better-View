@@ -5,7 +5,6 @@
 #include <QStackedWidget>
 #include <QSettings>
 #include <QToolButton>
-#include <QHash>
 #include <QFutureWatcher>
 #include <QImage>
 
@@ -13,6 +12,9 @@ class ImageViewer;
 class GifViewer;
 class FilePlaylist;
 class ZoomControl;
+class ThemeManager;
+class FullscreenManager;
+class StatusBarManager;          // добавлено
 class QLabel;
 class QAction;
 
@@ -40,8 +42,8 @@ private slots:
     void nextImage();
     void previousImage();
     void applyTheme(const QString &theme);
+    void about();
     void onImageLoaded();
-    void about();   // новый слот
 
 private:
     void setupUI();
@@ -49,11 +51,10 @@ private:
     void setupStatusBar();
     void setupSettingsMenu();
     bool loadFile(const QString &filePath);
-    void updateFileInfo();
     void updateTitle();
     void enableControls(bool enabled);
     void updateNavigationButtons();
-    void updateIcons();
+    void updateIconsFromTheme();
 
     QAction *openAction;
     QAction *rotateLeftAction;
@@ -68,18 +69,14 @@ private:
     ImageViewer *imageViewer;
     GifViewer *gifViewer;
     QLabel *fileNameLabel;
-    QLabel *resolutionLabel;
-    QLabel *fileSizeLabel;
     ZoomControl *zoomControl;
 
     QString currentFilePath;
-    bool isFullscreen;
-    bool wasMaximized;
-    qreal savedZoom;
 
     FilePlaylist *m_playlist;
-
-    QHash<QString, QIcon> iconCache;
+    ThemeManager *m_themeManager;
+    FullscreenManager *m_fullscreenManager;
+    StatusBarManager *m_statusBarManager;   // добавлено
 
     QFutureWatcher<QImage> *imageWatcher;
     bool isLoading;
