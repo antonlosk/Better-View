@@ -9,6 +9,7 @@
 #include "thememanager.h"
 #include "fullscreenmanager.h"
 #include "statusbarmanager.h"
+#include "settingsdialog.h"
 #include "version.h"
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -40,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     fullscreenAction(nullptr),
     prevAction(nullptr),
     nextAction(nullptr),
+    settingsAction(nullptr),
     settingsBtn(nullptr),
     stackedWidget(nullptr),
     imageViewer(nullptr),
@@ -199,17 +201,45 @@ void MainWindow::setupSettingsMenu()
     themeMenu->addAction(themeDark);
     themeMenu->addAction(themeLight);
     menu->addSeparator();
+
+    // Пункт "Settings"
+    settingsAction = new QAction(tr("Settings"), this);
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettingsDialog);
+    menu->addAction(settingsAction);
+    menu->addSeparator();
+
     QAction *aboutAction = new QAction(tr("About"), this);
     connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
     menu->addAction(aboutAction);
     menu->addSeparator();
-    QAction *exitAction = new QAction(tr("E&xit"), this);
-    exitAction->setShortcut(QKeySequence::Quit);
+
+    QAction *exitAction = new QAction(tr("Exit"), this);
+    exitAction->setShortcut(QKeySequence("Ctrl+Q"));
+    exitAction->setShortcutContext(Qt::ApplicationShortcut);
     connect(exitAction, &QAction::triggered, this, &MainWindow::exitApp);
     menu->addAction(exitAction);
 
     settingsBtn->setMenu(menu);
     toolbar->addWidget(settingsBtn);
+}
+
+void MainWindow::openSettingsDialog()
+{
+    SettingsDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        QString newTheme = dialog.selectedTheme();
+        QString newLanguage = dialog.selectedLanguage();
+
+        // Сохраняем настройки
+        SettingsManager::saveTheme(newTheme);
+        SettingsManager::saveLanguage(newLanguage);
+
+        // Применяем тему немедленно
+        m_themeManager->applyTheme(newTheme);
+        updateIconsFromTheme();
+
+        // Для смены языка потребуется перезапуск (пользователь уже предупреждён)
+    }
 }
 
 void MainWindow::applyTheme(const QString &theme)
@@ -220,15 +250,14 @@ void MainWindow::applyTheme(const QString &theme)
 
 void MainWindow::updateIconsFromTheme()
 {
-    QList<QAction*> actions;
-    if (openAction) actions.append(openAction);
-    if (rotateLeftAction) actions.append(rotateLeftAction);
-    if (rotateRightAction) actions.append(rotateRightAction);
-    if (deleteAction) actions.append(deleteAction);
-    if (fullscreenAction) actions.append(fullscreenAction);
-    if (prevAction) actions.append(prevAction);
-    if (nextAction) actions.append(nextAction);
-    m_themeManager->updateIcons(actions, settingsBtn);
+    m_themeManager->updateIcons(openAction,
+                                rotateLeftAction,
+                                rotateRightAction,
+                                deleteAction,
+                                fullscreenAction,
+                                prevAction,
+                                nextAction,
+                                settingsBtn);
 }
 
 void MainWindow::toggleFullscreen()
@@ -320,7 +349,7 @@ bool MainWindow::loadFile(const QString &filePath)
                 stackedWidget->setCurrentWidget(gifViewer);
                 updateTitle();
                 fileNameLabel->setText(fi.fileName());
-                QSize gifSize = gifViewer->getOriginalSize();
+                QSize gifSize = ImageLoader::getImageSize(filePath);
                 m_statusBarManager->updateFileInfo(currentFilePath, true, gifSize);
                 enableControls(false);
                 updateNavigationButtons();
@@ -349,14 +378,23 @@ void MainWindow::updateTitle()
 
 void MainWindow::enableControls(bool enabled)
 {
+    // Основные действия, которые должны блокироваться при отсутствии файла
+    if (rotateLeftAction) rotateLeftAction->setEnabled(enabled);
+    if (rotateRightAction) rotateRightAction->setEnabled(enabled);
+    if (deleteAction) deleteAction->setEnabled(enabled);
+    if (fullscreenAction) fullscreenAction->setEnabled(enabled);
+
+    // Кнопки зума +/- (ищем среди всех действий по тексту)
     QList<QAction*> actions = findChildren<QAction*>();
     for (QAction *a : actions) {
-        if (a->toolTip().contains("Rotate") || a->toolTip().contains("Delete") ||
-            a->toolTip().contains("Zoom") || a->text() == "+" || a->text() == "-") {
+        if (a->text() == "+" || a->text() == "-")
             a->setEnabled(enabled);
-        }
     }
+
+    // Слайдер масштаба
     if (zoomControl) zoomControl->setEnabled(enabled);
+
+    // Навигация (влево/вправо) управляется отдельно в updateNavigationButtons()
     updateNavigationButtons();
 }
 
@@ -399,14 +437,25 @@ void MainWindow::deleteCurrentFile()
         imageViewer->clear();
     }
 
+    QString prevFile = m_playlist->previous();
+    QString nextFile = m_playlist->next();
+
     if (FileManager::deleteFile(currentFilePath)) {
         m_playlist->refresh();
-        QString next = m_playlist->next();
-        if (next.isEmpty()) next = m_playlist->previous();
-        if (!next.isEmpty()) {
-            loadFile(next);
+        QString newFile;
+        if (!prevFile.isEmpty() && QFileInfo::exists(prevFile)) {
+            newFile = prevFile;
+        } else if (!nextFile.isEmpty() && QFileInfo::exists(nextFile)) {
+            newFile = nextFile;
+        }
+        if (!newFile.isEmpty()) {
+            m_playlist->setCurrent(newFile);
+            QFileInfo fi(newFile);
+            fileNameLabel->setText(fi.fileName());
+            loadFile(newFile);
         } else {
             currentFilePath.clear();
+            m_playlist->setCurrent(QString());
             updateTitle();
             fileNameLabel->setText(tr("No file"));
             m_statusBarManager->clear();

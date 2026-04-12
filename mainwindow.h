@@ -14,7 +14,7 @@ class FilePlaylist;
 class ZoomControl;
 class ThemeManager;
 class FullscreenManager;
-class StatusBarManager;          // добавлено
+class StatusBarManager;
 class QLabel;
 class QAction;
 
@@ -44,6 +44,7 @@ private slots:
     void applyTheme(const QString &theme);
     void about();
     void onImageLoaded();
+    void openSettingsDialog();
 
 private:
     void setupUI();
@@ -63,6 +64,7 @@ private:
     QAction *fullscreenAction;
     QAction *prevAction;
     QAction *nextAction;
+    QAction *settingsAction;   // новое действие для окна настроек
     QToolButton *settingsBtn;
 
     QStackedWidget *stackedWidget;
@@ -76,7 +78,7 @@ private:
     FilePlaylist *m_playlist;
     ThemeManager *m_themeManager;
     FullscreenManager *m_fullscreenManager;
-    StatusBarManager *m_statusBarManager;   // добавлено
+    StatusBarManager *m_statusBarManager;
 
     QFutureWatcher<QImage> *imageWatcher;
     bool isLoading;

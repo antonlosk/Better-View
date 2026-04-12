@@ -8,6 +8,9 @@ class SettingsManager
 public:
     static void saveTheme(const QString &theme);
     static QString loadTheme();
+
+    static void saveLanguage(const QString &lang);
+    static QString loadLanguage();
 };
 
 #endif

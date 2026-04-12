@@ -5,7 +5,7 @@ CONFIG += c++11
 TARGET = BetterView
 TEMPLATE = app
 
-VERSION = 0.0.2
+VERSION = 0.0.3
 RC_ICONS = icons/icon.ico
 
 SOURCES += main.cpp \
@@ -19,7 +19,8 @@ SOURCES += main.cpp \
            zoomcontrol.cpp \
            thememanager.cpp \
            fullscreenmanager.cpp \
-           statusbarmanager.cpp
+           statusbarmanager.cpp \
+           settingsdialog.cpp
 
 HEADERS += mainwindow.h \
            imageviewer.h \
@@ -32,6 +33,10 @@ HEADERS += mainwindow.h \
            thememanager.h \
            fullscreenmanager.h \
            statusbarmanager.h \
-           version.h
+           version.h \
+           settingsdialog.h
 
 RESOURCES += resources.qrc
+
+TRANSLATIONS += \
+    translations/BetterView_ru_RU.ts

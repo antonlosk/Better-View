@@ -1,7 +1,10 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QFileInfo>
+#include <QTranslator>
+#include <QLocale>
 #include "mainwindow.h"
+#include "settingsmanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -9,6 +12,23 @@ int main(int argc, char *argv[])
     app.setOrganizationName("BetterView");
     app.setApplicationName("BetterView");
     app.setStyle(QStyleFactory::create("Fusion"));
+
+    // Загрузка перевода
+    QTranslator translator;
+    QString lang = SettingsManager::loadLanguage();
+    if (lang == "system") {
+        QLocale systemLocale;
+        if (systemLocale.language() == QLocale::Russian) {
+            lang = "ru";
+        } else {
+            lang = "en";
+        }
+    }
+    if (lang == "ru") {
+        if (translator.load(":/translations/BetterView_ru_RU.qm")) {
+            app.installTranslator(&translator);
+        }
+    }
 
     MainWindow w;
     w.show();

@@ -16,20 +16,19 @@ class ThemeManager : public QObject
 public:
     explicit ThemeManager(QObject *parent = nullptr);
 
-    // Применяет тему (system/dark/light) и сохраняет её
     void applyTheme(const QString &theme);
-
-    // Обновляет иконки для заданных действий и кнопки меню
-    void updateIcons(const QList<QAction*> &actions, QToolButton *settingsBtn);
-
-    // Возвращает текущую активную тему (system/dark/light)
+    void updateIcons(QAction *openAction,
+                     QAction *rotateLeftAction,
+                     QAction *rotateRightAction,
+                     QAction *deleteAction,
+                     QAction *fullscreenAction,
+                     QAction *prevAction,
+                     QAction *nextAction,
+                     QToolButton *settingsBtn);
     QString currentTheme() const { return m_currentTheme; }
-
-    // Загружает сохранённую тему и применяет её
     void loadAndApply();
 
 private:
-    // Вспомогательные методы
     bool isSystemDarkTheme() const;
     QIcon loadAndColorIcon(const QString &fileName, const QColor &color);
     void setPaletteForTheme(const QString &theme);

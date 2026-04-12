@@ -9,16 +9,6 @@
 #include <QAction>
 #include <QToolButton>
 
-// Вспомогательная функция для поиска действия по tooltip (должна быть определена до использования)
-static QAction* findActionByToolTip(const QList<QAction*> &actions, const QString &toolTipPart)
-{
-    for (QAction *a : actions) {
-        if (a && a->toolTip().contains(toolTipPart))
-            return a;
-    }
-    return nullptr;
-}
-
 ThemeManager::ThemeManager(QObject *parent)
     : QObject(parent)
 {
@@ -123,7 +113,14 @@ QIcon ThemeManager::loadAndColorIcon(const QString &fileName, const QColor &colo
     return result;
 }
 
-void ThemeManager::updateIcons(const QList<QAction*> &actions, QToolButton *settingsBtn)
+void ThemeManager::updateIcons(QAction *openAction,
+                               QAction *rotateLeftAction,
+                               QAction *rotateRightAction,
+                               QAction *deleteAction,
+                               QAction *fullscreenAction,
+                               QAction *prevAction,
+                               QAction *nextAction,
+                               QToolButton *settingsBtn)
 {
     QColor iconColor;
     QPalette pal = qApp->palette();
@@ -131,19 +128,20 @@ void ThemeManager::updateIcons(const QList<QAction*> &actions, QToolButton *sett
     bool isDarkTheme = (windowColor.lightness() < 128);
     iconColor = isDarkTheme ? Qt::white : Qt::black;
 
-    auto setIconForAction = [&](QAction *action, const QString &fileName) {
-        if (action)
-            action->setIcon(loadAndColorIcon(fileName, iconColor));
-    };
-
-    setIconForAction(findActionByToolTip(actions, "Open"), "open.svg");
-    setIconForAction(findActionByToolTip(actions, "Rotate Left"), "rotate-left.svg");
-    setIconForAction(findActionByToolTip(actions, "Rotate Right"), "rotate-right.svg");
-    setIconForAction(findActionByToolTip(actions, "Delete"), "delete.svg");
-    setIconForAction(findActionByToolTip(actions, "Fullscreen"), "fullscreen.svg");
-    setIconForAction(findActionByToolTip(actions, "Previous"), "chevron-left.svg");
-    setIconForAction(findActionByToolTip(actions, "Next"), "chevron-right.svg");
-
+    if (openAction)
+        openAction->setIcon(loadAndColorIcon("open.svg", iconColor));
+    if (rotateLeftAction)
+        rotateLeftAction->setIcon(loadAndColorIcon("rotate-left.svg", iconColor));
+    if (rotateRightAction)
+        rotateRightAction->setIcon(loadAndColorIcon("rotate-right.svg", iconColor));
+    if (deleteAction)
+        deleteAction->setIcon(loadAndColorIcon("delete.svg", iconColor));
+    if (fullscreenAction)
+        fullscreenAction->setIcon(loadAndColorIcon("fullscreen.svg", iconColor));
+    if (prevAction)
+        prevAction->setIcon(loadAndColorIcon("chevron-left.svg", iconColor));
+    if (nextAction)
+        nextAction->setIcon(loadAndColorIcon("chevron-right.svg", iconColor));
     if (settingsBtn)
         settingsBtn->setIcon(loadAndColorIcon("menu.svg", iconColor));
 }

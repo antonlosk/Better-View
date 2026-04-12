@@ -1,5 +1,5 @@
 <RCC>
-    <qresource>
+    <qresource prefix="/">
         <file>icons/chevron-left.svg</file>
         <file>icons/chevron-right.svg</file>
         <file>icons/delete.svg</file>
@@ -10,5 +10,6 @@
         <file>icons/rotate-right.svg</file>
         <file>icons/zoom-in.svg</file>
         <file>icons/zoom-out.svg</file>
+        <file>translations/BetterView_ru_RU.qm</file>
     </qresource>
 </RCC>
