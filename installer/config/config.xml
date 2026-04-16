@@ -8,6 +8,7 @@
     <InstallerApplicationIcon>icon.ico</InstallerApplicationIcon>
     <InstallerWindowIcon>icon.ico</InstallerWindowIcon>
     <StartMenuDir>Better View</StartMenuDir>
-    <TargetDir>@HomeDir@/BetterView</TargetDir>
+    <TargetDir>@ApplicationsDir@/BetterView</TargetDir>
     <AdminTargetDir>@ApplicationsDir@/BetterView</AdminTargetDir>
+    <RunAsAdmin>true</RunAsAdmin>
 </Installer>
