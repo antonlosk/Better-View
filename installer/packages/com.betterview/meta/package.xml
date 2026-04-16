@@ -6,4 +6,5 @@
     <ReleaseDate>%DATE%</ReleaseDate>
     <Default>true</Default>
     <Script>installscript.qs</Script>
+    <RequiresAdminRights>true</RequiresAdminRights>
 </Package>
