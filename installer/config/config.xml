@@ -11,4 +11,5 @@
     <TargetDir>@ApplicationsDir@/BetterView</TargetDir>
     <AdminTargetDir>@ApplicationsDir@/BetterView</AdminTargetDir>
     <ControlScript>controller.qs</ControlScript>
+	<RemoveTargetDir>false</RemoveTargetDir>
 </Installer>
