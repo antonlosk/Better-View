@@ -10,4 +10,5 @@
     <StartMenuDir>Better View</StartMenuDir>
     <TargetDir>@ApplicationsDir@/BetterView</TargetDir>
     <AdminTargetDir>@ApplicationsDir@/BetterView</AdminTargetDir>
+    <ControlScript>controller.qs</ControlScript>
 </Installer>

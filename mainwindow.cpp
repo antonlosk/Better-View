@@ -31,6 +31,11 @@
 #include <QSvgRenderer>
 #include <QPainter>
 #include <QtConcurrent>
+#include <QProcess>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -42,6 +47,8 @@ MainWindow::MainWindow(QWidget *parent)
     prevAction(nullptr),
     nextAction(nullptr),
     settingsAction(nullptr),
+    zoomInAction(nullptr),
+    zoomOutAction(nullptr),
     settingsBtn(nullptr),
     stackedWidget(nullptr),
     imageViewer(nullptr),
@@ -69,6 +76,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     imageWatcher = new QFutureWatcher<QImage>(this);
     connect(imageWatcher, &QFutureWatcher<QImage>::finished, this, &MainWindow::onImageLoaded);
+
+    // Подключение сигналов запроса свойств файла
+    connect(imageViewer, &ImageViewer::propertyRequested, this, &MainWindow::showFileProperties);
+    connect(gifViewer, &GifViewer::propertyRequested, this, &MainWindow::showFileProperties);
 }
 
 MainWindow::~MainWindow() {}
@@ -98,12 +109,12 @@ void MainWindow::setupToolbar()
 
     toolbar->addSeparator();
 
-    rotateLeftAction = new QAction(tr("↺"), this);
+    rotateLeftAction = new QAction(this);
     rotateLeftAction->setToolTip(tr("Rotate Left"));
     connect(rotateLeftAction, &QAction::triggered, this, &MainWindow::rotateLeft);
     toolbar->addAction(rotateLeftAction);
 
-    rotateRightAction = new QAction(tr("↻"), this);
+    rotateRightAction = new QAction(this);
     rotateRightAction->setToolTip(tr("Rotate Right"));
     connect(rotateRightAction, &QAction::triggered, this, &MainWindow::rotateRight);
     toolbar->addAction(rotateRightAction);
@@ -140,14 +151,16 @@ void MainWindow::setupStatusBar()
     connect(zoomControl, &ZoomControl::zoomRequested, imageViewer, &ImageViewer::setZoom);
     connect(imageViewer, &ImageViewer::zoomChanged, zoomControl, &ZoomControl::setZoom);
 
-    QAction *zoomOutAction = new QAction(tr("-"), this);
+    // Кнопка Zoom Out (без текста, только SVG)
+    zoomOutAction = new QAction(this);
     zoomOutAction->setToolTip(tr("Zoom Out"));
     connect(zoomOutAction, &QAction::triggered, this, [this]() { imageViewer->zoomOut(); });
     QToolButton *zoomOutBtn = new QToolButton;
     zoomOutBtn->setDefaultAction(zoomOutAction);
     statusBar->addPermanentWidget(zoomOutBtn);
 
-    QAction *zoomInAction = new QAction(tr("+"), this);
+    // Кнопка Zoom In (без текста, только SVG)
+    zoomInAction = new QAction(this);
     zoomInAction->setToolTip(tr("Zoom In"));
     connect(zoomInAction, &QAction::triggered, this, [this]() { imageViewer->zoomIn(); });
     QToolButton *zoomInBtn = new QToolButton;
@@ -156,7 +169,7 @@ void MainWindow::setupStatusBar()
 
     statusBar->addPermanentWidget(new QLabel("  "));
 
-    fullscreenAction = new QAction(tr("⛶"), this);
+    fullscreenAction = new QAction(this);
     fullscreenAction->setToolTip(tr("Fullscreen (F11)"));
     connect(fullscreenAction, &QAction::triggered, this, &MainWindow::toggleFullscreen);
     QToolButton *fullscreenBtn = new QToolButton;
@@ -169,12 +182,12 @@ void MainWindow::setupSettingsMenu()
     QToolBar *toolbar = findChild<QToolBar*>();
     if (!toolbar) return;
 
-    prevAction = new QAction(tr("◀"), this);
+    prevAction = new QAction(this);
     prevAction->setToolTip(tr("Previous (Left Arrow)"));
     connect(prevAction, &QAction::triggered, this, &MainWindow::previousImage);
     toolbar->addAction(prevAction);
 
-    nextAction = new QAction(tr("▶"), this);
+    nextAction = new QAction(this);
     nextAction->setToolTip(tr("Next (Right Arrow)"));
     connect(nextAction, &QAction::triggered, this, &MainWindow::nextImage);
     toolbar->addAction(nextAction);
@@ -182,10 +195,7 @@ void MainWindow::setupSettingsMenu()
     toolbar->addSeparator();
 
     settingsBtn = new QToolButton(toolbar);
-    settingsBtn->setText(tr("⋮"));
-    QFont font = settingsBtn->font();
-    font.setPointSize(font.pointSize() + 2);
-    settingsBtn->setFont(font);
+    settingsBtn->setText("");   // только иконка, без текста
     settingsBtn->setToolTip(tr("Menu"));
     settingsBtn->setPopupMode(QToolButton::InstantPopup);
 
@@ -202,7 +212,6 @@ void MainWindow::setupSettingsMenu()
     themeMenu->addAction(themeLight);
     menu->addSeparator();
 
-    // Пункт "Settings"
     settingsAction = new QAction(tr("Settings"), this);
     connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettingsDialog);
     menu->addAction(settingsAction);
@@ -230,15 +239,11 @@ void MainWindow::openSettingsDialog()
         QString newTheme = dialog.selectedTheme();
         QString newLanguage = dialog.selectedLanguage();
 
-        // Сохраняем настройки
         SettingsManager::saveTheme(newTheme);
         SettingsManager::saveLanguage(newLanguage);
 
-        // Применяем тему немедленно
         m_themeManager->applyTheme(newTheme);
         updateIconsFromTheme();
-
-        // Для смены языка потребуется перезапуск (пользователь уже предупреждён)
     }
 }
 
@@ -257,6 +262,8 @@ void MainWindow::updateIconsFromTheme()
                                 fullscreenAction,
                                 prevAction,
                                 nextAction,
+                                zoomInAction,
+                                zoomOutAction,
                                 settingsBtn);
 }
 
@@ -378,23 +385,13 @@ void MainWindow::updateTitle()
 
 void MainWindow::enableControls(bool enabled)
 {
-    // Основные действия, которые должны блокироваться при отсутствии файла
     if (rotateLeftAction) rotateLeftAction->setEnabled(enabled);
     if (rotateRightAction) rotateRightAction->setEnabled(enabled);
     if (deleteAction) deleteAction->setEnabled(enabled);
     if (fullscreenAction) fullscreenAction->setEnabled(enabled);
-
-    // Кнопки зума +/- (ищем среди всех действий по тексту)
-    QList<QAction*> actions = findChildren<QAction*>();
-    for (QAction *a : actions) {
-        if (a->text() == "+" || a->text() == "-")
-            a->setEnabled(enabled);
-    }
-
-    // Слайдер масштаба
+    if (zoomInAction) zoomInAction->setEnabled(enabled);
+    if (zoomOutAction) zoomOutAction->setEnabled(enabled);
     if (zoomControl) zoomControl->setEnabled(enabled);
-
-    // Навигация (влево/вправо) управляется отдельно в updateNavigationButtons()
     updateNavigationButtons();
 }
 
@@ -519,4 +516,35 @@ void MainWindow::dropEvent(QDropEvent *event)
     } else {
         QMessageBox::information(this, tr("Not supported"), tr("File format not supported."));
     }
+}
+
+void MainWindow::showFileProperties()
+{
+    if (currentFilePath.isEmpty())
+        return;
+
+#ifdef Q_OS_WIN
+    QString nativePath = QDir::toNativeSeparators(currentFilePath);
+    LPCWSTR file = reinterpret_cast<LPCWSTR>(nativePath.utf16());
+
+    SHELLEXECUTEINFOW sei = {};          // zero-initialize
+    sei.cbSize = sizeof(SHELLEXECUTEINFOW);
+    sei.fMask = SEE_MASK_INVOKEIDLIST;
+    sei.hwnd = reinterpret_cast<HWND>(this->winId());
+    sei.lpVerb = L"properties";
+    sei.lpFile = file;
+    sei.nShow = SW_SHOW;
+
+    if (!ShellExecuteExW(&sei)) {
+        // fallback
+        QProcess::startDetached("explorer", QStringList() << "/select," << nativePath);
+    }
+#else
+    QFileInfo fi(currentFilePath);
+    QString info = tr("File Properties\n\nName: %1\nSize: %2 KB\nModified: %3")
+                       .arg(fi.fileName())
+                       .arg(fi.size() / 1024.0, 0, 'f', 2)
+                       .arg(fi.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
+    QMessageBox::information(this, tr("File Properties"), info);
+#endif
 }

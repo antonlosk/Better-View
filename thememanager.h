@@ -24,6 +24,8 @@ public:
                      QAction *fullscreenAction,
                      QAction *prevAction,
                      QAction *nextAction,
+                     QAction *zoomInAction,
+                     QAction *zoomOutAction,
                      QToolButton *settingsBtn);
     QString currentTheme() const { return m_currentTheme; }
     void loadAndApply();

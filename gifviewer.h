@@ -15,9 +15,12 @@ public:
     void stop();
     QSize getOriginalSize() const { return originalSize; }
 
+signals:
+    void propertyRequested();   // новый сигнал
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
-    void contextMenuEvent(QContextMenuEvent *event) override;  // новое
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
     void updateScaledPixmap();

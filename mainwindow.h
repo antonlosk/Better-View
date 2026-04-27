@@ -45,6 +45,7 @@ private slots:
     void about();
     void onImageLoaded();
     void openSettingsDialog();
+    void showFileProperties();   // новый слот для показа свойств файла
 
 private:
     void setupUI();
@@ -64,7 +65,9 @@ private:
     QAction *fullscreenAction;
     QAction *prevAction;
     QAction *nextAction;
-    QAction *settingsAction;   // новое действие для окна настроек
+    QAction *settingsAction;
+    QAction *zoomInAction;
+    QAction *zoomOutAction;
     QToolButton *settingsBtn;
 
     QStackedWidget *stackedWidget;

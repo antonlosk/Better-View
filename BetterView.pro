@@ -5,7 +5,7 @@ CONFIG += c++11
 TARGET = BetterView
 TEMPLATE = app
 
-VERSION = 0.0.1
+VERSION = 0.0.2
 RC_ICONS = icons/icon.ico
 
 SOURCES += main.cpp \

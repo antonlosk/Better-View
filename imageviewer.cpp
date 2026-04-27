@@ -154,6 +154,11 @@ void ImageViewer::contextMenuEvent(QContextMenuEvent *event)
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setPixmap(pixmapItem->pixmap());
     });
+    menu.addSeparator();
+    QAction *propertiesAction = menu.addAction(tr("Properties"));
+    connect(propertiesAction, &QAction::triggered, this, [this]() {
+        emit propertyRequested();
+    });
     menu.exec(event->globalPos());
     event->accept();
 }

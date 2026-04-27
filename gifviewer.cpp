@@ -79,6 +79,11 @@ void GifViewer::contextMenuEvent(QContextMenuEvent *event)
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setPixmap(movie->currentPixmap());
     });
+    menu.addSeparator();
+    QAction *propertiesAction = menu.addAction(tr("Properties"));
+    connect(propertiesAction, &QAction::triggered, this, [this]() {
+        emit propertyRequested();
+    });
     menu.exec(event->globalPos());
     event->accept();
 }

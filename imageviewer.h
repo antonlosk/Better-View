@@ -29,13 +29,14 @@ public:
 
 signals:
     void zoomChanged(qreal value);
+    void propertyRequested();   // новый сигнал
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void contextMenuEvent(QContextMenuEvent *event) override;  // новое
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
     void updateZoom(qreal factor);

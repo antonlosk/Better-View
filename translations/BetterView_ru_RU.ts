@@ -12,16 +12,8 @@
         <translation>Открыть (Ctrl+O)</translation>
     </message>
     <message>
-        <source>↺</source>
-        <translation>↺</translation>
-    </message>
-    <message>
         <source>Rotate Left</source>
         <translation>Повернуть влево</translation>
-    </message>
-    <message>
-        <source>↻</source>
-        <translation>↻</translation>
     </message>
     <message>
         <source>Rotate Right</source>
@@ -44,32 +36,16 @@
         <translation>Увеличить</translation>
     </message>
     <message>
-        <source>⛶</source>
-        <translation>⛶</translation>
-    </message>
-    <message>
         <source>Fullscreen (F11)</source>
         <translation>Полный экран (F11)</translation>
-    </message>
-    <message>
-        <source>◀</source>
-        <translation>◀</translation>
     </message>
     <message>
         <source>Previous (Left Arrow)</source>
         <translation>Предыдущее (←)</translation>
     </message>
     <message>
-        <source>▶</source>
-        <translation>▶</translation>
-    </message>
-    <message>
         <source>Next (Right Arrow)</source>
         <translation>Следующее (→)</translation>
-    </message>
-    <message>
-        <source>⋮</source>
-        <translation>⋮</translation>
     </message>
     <message>
         <source>Menu</source>
@@ -147,6 +123,14 @@
         <source>File format not supported.</source>
         <translation>Формат файла не поддерживается.</translation>
     </message>
+    <message>
+        <source>File Properties</source>
+        <translation>Свойства файла</translation>
+    </message>
+    <message>
+        <source>File Properties\n\nName: %1\nSize: %2 KB\nModified: %3</source>
+        <translation>Свойства файла\n\nИмя: %1\nРазмер: %2 КБ\nИзменён: %3</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -198,8 +182,12 @@
         <translation>Разрешение: -- x --</translation>
     </message>
     <message>
-        <source>Size: -- MB</source>
-        <translation>Размер: -- МБ</translation>
+        <source>Size: --</source>
+        <translation>Размер: --</translation>
+    </message>
+    <message>
+        <source>Size: %1 KB</source>
+        <translation>Размер: %1 КБ</translation>
     </message>
     <message>
         <source>Size: %1 MB</source>
@@ -231,12 +219,20 @@
         <source>Copy</source>
         <translation>Копировать</translation>
     </message>
+    <message>
+        <source>Properties</source>
+        <translation>Свойства</translation>
+    </message>
 </context>
 <context>
     <name>GifViewer</name>
     <message>
         <source>Copy</source>
         <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Properties</source>
+        <translation>Свойства</translation>
     </message>
 </context>
 </TS>

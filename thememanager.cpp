@@ -120,6 +120,8 @@ void ThemeManager::updateIcons(QAction *openAction,
                                QAction *fullscreenAction,
                                QAction *prevAction,
                                QAction *nextAction,
+                               QAction *zoomInAction,
+                               QAction *zoomOutAction,
                                QToolButton *settingsBtn)
 {
     QColor iconColor;
@@ -142,6 +144,10 @@ void ThemeManager::updateIcons(QAction *openAction,
         prevAction->setIcon(loadAndColorIcon("chevron-left.svg", iconColor));
     if (nextAction)
         nextAction->setIcon(loadAndColorIcon("chevron-right.svg", iconColor));
+    if (zoomInAction)
+        zoomInAction->setIcon(loadAndColorIcon("zoom-in.svg", iconColor));
+    if (zoomOutAction)
+        zoomOutAction->setIcon(loadAndColorIcon("zoom-out.svg", iconColor));
     if (settingsBtn)
         settingsBtn->setIcon(loadAndColorIcon("menu.svg", iconColor));
 }
