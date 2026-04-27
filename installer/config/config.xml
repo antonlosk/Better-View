@@ -11,5 +11,5 @@
     <TargetDir>@ApplicationsDir@/BetterView</TargetDir>
     <AdminTargetDir>@ApplicationsDir@/BetterView</AdminTargetDir>
     <ControlScript>controller.qs</ControlScript>
-	<Resource>translations</Resource>
+	<ResourceFile>resources.qrc</ResourceFile>
 </Installer>
