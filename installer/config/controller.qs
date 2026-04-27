@@ -3,63 +3,53 @@ function Controller() {}
 // Словарь переводов
 var translations = {
     "ru": {
-        "auto_uninstall_failed": "Не удалось автоматически удалить предыдущую версию из:\n{0}\nПожалуйста, удалите её вручную и повторите установку.",
-        "maintenance_tool_missing": "Найдена папка предыдущей версии:\n{0}\nНо утилита удаления отсутствует. Установка невозможна."
+        "maintenance_tool_missing": "Найдена папка предыдущей версии:\n%1\nНо утилита удаления отсутствует. Установка будет продолжена, однако старые файлы могут остаться.",
+        "manual_uninstall_notice": "Будет запущена программа удаления предыдущей версии. Пожалуйста, нажмите «Удалить» в появившемся окне, чтобы полностью удалить старую версию перед установкой новой."
     },
     "en": {
-        "auto_uninstall_failed": "Failed to automatically remove the previous version from:\n{0}\nPlease remove it manually and restart the installation.",
-        "maintenance_tool_missing": "Previous version folder found:\n{0}\nBut the uninstaller utility is missing. Installation cannot continue."
+        "maintenance_tool_missing": "Previous version folder found:\n%1\nUninstaller utility is missing. Installation will continue, but old files may remain.",
+        "manual_uninstall_notice": "The uninstaller for the previous version will now start. Please click «Remove» in the window that appears to completely remove the old version before installing the new one."
     }
 };
 
-// Функция перевода
 function tr(key, param) {
-    // Берём первые два символа языка системы (например, "ru", "en")
     var lang = installer.language().substring(0, 2);
-    
     if (translations[lang] && translations[lang][key]) {
         var text = translations[lang][key];
-        return param ? text.replace("{0}", param) : text;
+        return param ? text.replace("%1", param) : text;
     }
-    
-    // Если перевода нет, возвращаем английскую версию (или сам ключ)
-    return (translations["en"] && translations["en"][key]) ? translations["en"][key] : key;
+    return (translations["en"] && translations["en"][key]) ? translations["en"][key].replace("%1", param || "") : key;
 }
 
 Controller.prototype.IntroductionPageCallback = function() {
     if (installer.isInstaller()) {
-        // Ищем путь предыдущей установки
         var previousInstallPath = installer.findPath("Better View");
 
         if (previousInstallPath !== "") {
             var mtPath = previousInstallPath + "/maintenancetool.exe";
 
             if (installer.fileExists(mtPath)) {
-                var result = installer.execute(mtPath, ["uninstall", "--silent"]);
+                // Показываем информационное сообщение, чтобы пользователь знал, что сейчас будет
+                QMessageBox.information(
+                    "Better View",
+                    tr("manual_uninstall_notice"),
+                    QMessageBox.Ok
+                );
 
-                if (result !== 0) {
-                    var widget = gui.currentPageWidget();
-                    var errorMsg = tr("auto_uninstall_failed", previousInstallPath);
-                    widget.ErrorLabel.setText("<font color='red'>" + errorMsg + "</font>");
-                    
-                    installer.setDefaultPageVisible(QInstaller.TargetDirectory, false);
-                    installer.setDefaultPageVisible(QInstaller.ComponentSelection, false);
-                    installer.setDefaultPageVisible(QInstaller.ReadyForInstallation, false);
-                    installer.setDefaultPageVisible(QInstaller.PerformInstallation, false);
-                    return;
-                }
+                // Запускаем утилиту обслуживания БЕЗ аргументов – откроется окно,
+                // где можно выбрать «Удалить». Ждём завершения.
+                installer.execute(mtPath);
+
+                // После того как окно удаления закрыто, продолжаем установку.
+                // Если пользователь передумал и не удалил – старая версия останется,
+                // новая всё равно установится поверх (файлы перезапишутся).
             } else {
-                var widget = gui.currentPageWidget();
-                var errorMsg = tr("maintenance_tool_missing", previousInstallPath);
-                widget.ErrorLabel.setText("<font color='red'>" + errorMsg + "</font>");
-                
-                installer.setDefaultPageVisible(QInstaller.TargetDirectory, false);
-                installer.setDefaultPageVisible(QInstaller.ComponentSelection, false);
-                installer.setDefaultPageVisible(QInstaller.ReadyForInstallation, false);
-                installer.setDefaultPageVisible(QInstaller.PerformInstallation, false);
-                return;
+                QMessageBox.warning(
+                    "Better View",
+                    tr("maintenance_tool_missing", previousInstallPath),
+                    QMessageBox.Ok
+                );
             }
         }
-        // Если путь не найден – установка продолжается
     }
 }
